@@ -1,0 +1,8 @@
+.claude
+CLAUDE.md
+__pycache__
+venv/
+build/
+*.pyc
+.pytest_cache/
+
