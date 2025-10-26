@@ -45,20 +45,22 @@ jobs:
 
       - name: Deploy to gh-pages branch
         run: |
+          # Save build artifacts to a temporary location
+          cp -r build/web /tmp/web-build
+
+          # Configure git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Clone the gh-pages branch
+          # Switch to gh-pages branch
           git fetch origin gh-pages
           git checkout gh-pages
 
           # Remove all existing files except .git
           find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' -exec rm -rf {} +
 
-          # Copy build/web contents to root
-          git checkout main -- build/web
-          mv build/web/* .
-          rm -rf build
+          # Copy build artifacts from temp location
+          cp -r /tmp/web-build/* .
 
           # Commit and push
           git add -A
