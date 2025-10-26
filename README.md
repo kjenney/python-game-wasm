@@ -2,6 +2,8 @@
 
 A simple Zelda-style adventure game built with pygame, featuring character selection and pixel-art graphics.
 
+Check it out live at https://kjenney.github.io/python-game-wasm/
+
 ## Features
 
 - **3 Playable Characters**: Choose between Knight, Mage, or Ranger
