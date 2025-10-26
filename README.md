@@ -85,13 +85,6 @@ The game follows pygame best practices (2025):
 
 The game can be deployed to run in web browsers using WebAssembly (WASM) via pygbag.
 
-### Prerequisites
-
-Install pygbag:
-```bash
-pip install pygbag
-```
-
 ### Building for WASM
 
 **Linux/Mac:**
@@ -115,10 +108,14 @@ The build output will be in `build/web/`.
 
 Run a local test server:
 ```bash
-pygbag --server .
+pygbag .
 ```
 
 Then open http://localhost:8000 in your browser.
+
+The test server is enabled by default. For debugging, you can access:
+- `http://localhost:8000?-i` - Terminal with REPL and sized-down canvas
+- `http://localhost:8000/#debug` - Verbose output for troubleshooting
 
 ### Deploying to the Web
 

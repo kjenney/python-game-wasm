@@ -1,6 +1,6 @@
 # /// script
 # dependencies = [
-#   "pygame==2.6.1",
+#   "pygame-ce",
 # ]
 # ///
 """
