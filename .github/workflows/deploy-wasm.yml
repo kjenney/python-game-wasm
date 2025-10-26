@@ -41,8 +41,7 @@ jobs:
 
       - name: Build WASM
         run: |
-          chmod +x build_wasm.sh
-          ./build_wasm.sh
+          pygbag --build .
 
       - name: Deploy to gh-pages branch
         run: |
