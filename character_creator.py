@@ -64,6 +64,8 @@ class CharacterCreator:
 
         # UI state
         self.active_slider = 0  # 0=Red, 1=Green, 2=Blue
+        self.slider_rects = []  # Store slider bar rectangles for mouse interaction
+        self.dragging_slider = None  # Track which slider is being dragged (None or 0-2)
 
         # Preview sprite
         self.preview_sprite = None
@@ -176,18 +178,50 @@ class CharacterCreator:
                 self.eye_color = self.EYE_COLORS[self.selected_eye_color_index][1]
                 self.update_preview()
 
-        # Handle mouse motion for hover detection
+        # Handle mouse motion for hover detection and dragging
         elif event.type == pygame.MOUSEMOTION:
+            mouse_pos = event.pos
+
             # Check if mouse is hovering over back button
-            self.back_button_hovered = self.back_button_rect.collidepoint(event.pos)
+            self.back_button_hovered = self.back_button_rect.collidepoint(mouse_pos)
+
+            # Handle slider dragging
+            if self.dragging_slider is not None:
+                slider_rect = self.slider_rects[self.dragging_slider]
+                # Calculate value based on mouse position within slider
+                relative_x = mouse_pos[0] - slider_rect.x
+                relative_x = max(0, min(relative_x, slider_rect.width))
+                value = int((relative_x / slider_rect.width) * 255)
+                self.body_color[self.dragging_slider] = value
+                self.active_slider = self.dragging_slider
+                self.update_preview()
 
         # Handle mouse clicks
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left mouse button
                 mouse_pos = event.pos
+
                 # Check if back button was clicked
                 if self.back_button_rect.collidepoint(mouse_pos):
                     return False  # Cancel character creation
+
+                # Check if any slider was clicked
+                for i, slider_rect in enumerate(self.slider_rects):
+                    if slider_rect.collidepoint(mouse_pos):
+                        self.dragging_slider = i
+                        self.active_slider = i
+                        # Set the value based on click position
+                        relative_x = mouse_pos[0] - slider_rect.x
+                        relative_x = max(0, min(relative_x, slider_rect.width))
+                        value = int((relative_x / slider_rect.width) * 255)
+                        self.body_color[i] = value
+                        self.update_preview()
+                        break
+
+        # Handle mouse button release to stop dragging
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:  # Left mouse button
+                self.dragging_slider = None
 
         return None
 
@@ -266,8 +300,11 @@ class CharacterCreator:
 
         # RGB Sliders
         rgb_slider_y = slider_y + 180
-        rgb_label = self.small_font.render("Body Color (Arrow keys):", True, (255, 255, 255))
+        rgb_label = self.small_font.render("Body Color (Click/drag or arrow keys):", True, (255, 255, 255))
         self.screen.blit(rgb_label, (slider_x, rgb_slider_y))
+
+        # Clear and rebuild slider rects for mouse interaction
+        self.slider_rects = []
 
         slider_names = ["Red", "Green", "Blue"]
         for i, slider_name in enumerate(slider_names):
@@ -281,6 +318,7 @@ class CharacterCreator:
 
             # Slider bar
             slider_rect = pygame.Rect(slider_x + 70, s_y + 5, 200, 20)
+            self.slider_rects.append(slider_rect)  # Store for mouse interaction
             pygame.draw.rect(self.screen, (60, 60, 80), slider_rect)
             pygame.draw.rect(self.screen, (255, 255, 255), slider_rect, 2)
 
@@ -311,8 +349,8 @@ class CharacterCreator:
 
         # Instructions at bottom
         instructions = [
-            "Arrow keys: Adjust colors | 1-4: Presets | E: Eye color",
-            "ENTER/SPACE: Create character",
+            "Click/drag sliders or use arrow keys | 1-4: Presets | E: Eye color",
+            "ENTER/SPACE or click: Create character",
             "ESC or Back button: Cancel"
         ]
 
