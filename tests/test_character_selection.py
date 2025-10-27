@@ -66,12 +66,13 @@ class TestCharacterSelectionScreen:
         with patch('character_selection.pygame.font.Font'):
             selection = CharacterSelectionScreen(screen)
 
-            # Start at 0, press left should wrap to last character
+            # Start at 0, press left should wrap to last option (custom character)
             event = Mock()
             event.type = pygame.KEYDOWN
             event.key = pygame.K_LEFT
             selection.handle_event(event)
-            assert selection.selected_index == len(CHARACTERS) - 1
+            # Should wrap to last option (total_options - 1, which is 3 for 4 options)
+            assert selection.selected_index == selection.total_options - 1
 
             # Press right to wrap back to 0
             event.key = pygame.K_RIGHT

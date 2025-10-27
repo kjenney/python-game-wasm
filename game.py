@@ -8,16 +8,21 @@ from characters import get_character_by_index
 class Game:
     """Main game class handling gameplay logic."""
 
-    def __init__(self, screen, character_index):
+    def __init__(self, screen, character_index, custom_character=None):
         """
         Initialize the game.
 
         Args:
             screen: Pygame screen surface
-            character_index: Index of the selected character
+            character_index: Index of the selected character (0-2)
+            custom_character: Optional custom Character object (overrides character_index)
         """
         self.screen = screen
-        self.character = get_character_by_index(character_index)
+        # Use custom character if provided, otherwise get by index
+        if custom_character is not None:
+            self.character = custom_character
+        else:
+            self.character = get_character_by_index(character_index)
         self.sprite = self.character.create_sprite()
         self.font = pygame.font.Font(None, 24)
         self.running = True

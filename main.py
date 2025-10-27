@@ -10,7 +10,8 @@ Compatible with both desktop and WASM (pygbag) deployment.
 import asyncio
 import pygame
 import sys
-from character_selection import CharacterSelectionScreen
+from character_selection import CharacterSelectionScreen, CREATE_CUSTOM_INDEX
+from character_creator import run_character_creator
 from game import Game
 
 
@@ -30,9 +31,10 @@ async def main():
 
     # Character selection phase
     selection_screen = CharacterSelectionScreen(screen)
-    selected_character = None
+    selected_character_index = None
+    custom_character = None
 
-    while selected_character is None:
+    while selected_character_index is None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -40,15 +42,36 @@ async def main():
 
             result = selection_screen.handle_event(event)
             if result is not None:
-                selected_character = result
+                selected_character_index = result
 
         selection_screen.draw()
         pygame.display.flip()
         clock.tick(FPS)
         await asyncio.sleep(0)  # Required for WASM compatibility
 
-    # Game phase
-    game = Game(screen, selected_character)
+    # Handle custom character creation if selected
+    if selected_character_index == CREATE_CUSTOM_INDEX:
+        custom_character = await run_character_creator(screen)
+        if custom_character is None:
+            # User cancelled, go back to selection
+            selected_character_index = None
+            while selected_character_index is None:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        return
+
+                    result = selection_screen.handle_event(event)
+                    if result is not None:
+                        selected_character_index = result
+
+                selection_screen.draw()
+                pygame.display.flip()
+                clock.tick(FPS)
+                await asyncio.sleep(0)
+
+    # Game phase - pass character index or custom character
+    game = Game(screen, selected_character_index, custom_character=custom_character)
 
     while game.is_running():
         for event in pygame.event.get():

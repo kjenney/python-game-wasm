@@ -6,7 +6,7 @@ import pygame
 class Character:
     """Represents a playable character in the game."""
 
-    def __init__(self, name, color, description):
+    def __init__(self, name, color, description, eye_color=None):
         """
         Initialize a character.
 
@@ -14,10 +14,12 @@ class Character:
             name: Character name
             color: Primary color (RGB tuple)
             description: Character description
+            eye_color: Optional eye/pupil color (RGB tuple), defaults to black
         """
         self.name = name
         self.color = color
         self.description = description
+        self.eye_color = eye_color if eye_color else (0, 0, 0)
         self.x = 400
         self.y = 300
         self.speed = 5
@@ -31,8 +33,8 @@ class Character:
         # Add simple pixel art details (eyes, etc.)
         pygame.draw.rect(sprite, (255, 255, 255), (8, 10, 6, 6))  # Left eye
         pygame.draw.rect(sprite, (255, 255, 255), (18, 10, 6, 6))  # Right eye
-        pygame.draw.rect(sprite, (0, 0, 0), (10, 12, 2, 2))  # Left pupil
-        pygame.draw.rect(sprite, (0, 0, 0), (20, 12, 2, 2))  # Right pupil
+        pygame.draw.rect(sprite, self.eye_color, (10, 12, 2, 2))  # Left pupil
+        pygame.draw.rect(sprite, self.eye_color, (20, 12, 2, 2))  # Right pupil
 
         return sprite
 
