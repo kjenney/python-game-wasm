@@ -5,8 +5,13 @@ This module provides a character creator minigame that allows players
 to customize their own character with name, colors, and visual features.
 """
 
+import sys
 import pygame
 from characters import Character
+
+# Import platform for WASM/mobile keyboard support
+if sys.platform == "emscripten":
+    import platform
 
 
 class CharacterCreator:
@@ -72,6 +77,56 @@ class CharacterCreator:
 
         # Start text input to trigger mobile keyboard
         pygame.key.start_text_input()
+
+        # Mobile keyboard support for WASM
+        self.mobile_input = None
+        self._setup_mobile_input()
+        # Show keyboard initially since name input is active by default
+        self._show_mobile_keyboard()
+
+    def _setup_mobile_input(self):
+        """
+        Create a hidden HTML input element for mobile keyboard support.
+        This is needed because pygame.key.start_text_input() doesn't trigger
+        mobile keyboards in WASM/pygbag builds.
+        """
+        if sys.platform == "emscripten":
+            try:
+                # Create an invisible input element
+                input_elem = platform.window.document.createElement("input")
+                input_elem.type = "text"
+                input_elem.id = "mobile-keyboard-input"
+
+                # Style it to be invisible but still functional
+                input_elem.style.position = "absolute"
+                input_elem.style.left = "-9999px"
+                input_elem.style.top = "-9999px"
+                input_elem.style.width = "1px"
+                input_elem.style.height = "1px"
+                input_elem.style.opacity = "0"
+                input_elem.style.pointerEvents = "none"
+
+                # Add to document
+                platform.window.document.body.appendChild(input_elem)
+                self.mobile_input = input_elem
+            except Exception as e:
+                print(f"Failed to create mobile input element: {e}")
+
+    def _show_mobile_keyboard(self):
+        """Focus the hidden input element to trigger mobile keyboard."""
+        if sys.platform == "emscripten" and self.mobile_input:
+            try:
+                self.mobile_input.focus()
+            except Exception as e:
+                print(f"Failed to focus mobile input: {e}")
+
+    def _hide_mobile_keyboard(self):
+        """Blur the hidden input element to hide mobile keyboard."""
+        if sys.platform == "emscripten" and self.mobile_input:
+            try:
+                self.mobile_input.blur()
+            except Exception as e:
+                print(f"Failed to blur mobile input: {e}")
 
     def update_preview(self):
         """Update the preview sprite with current customization."""
@@ -144,8 +199,10 @@ class CharacterCreator:
                 # Toggle text input to show/hide mobile keyboard
                 if self.name_input_active:
                     pygame.key.start_text_input()
+                    self._show_mobile_keyboard()
                 else:
                     pygame.key.stop_text_input()
+                    self._hide_mobile_keyboard()
                 return None
 
             # Handle name input
@@ -204,11 +261,13 @@ class CharacterCreator:
                     if not self.name_input_active:
                         self.name_input_active = True
                         pygame.key.start_text_input()
+                        self._show_mobile_keyboard()
                 else:
                     # Clicked outside text box - deactivate name input
                     if self.name_input_active:
                         self.name_input_active = False
                         pygame.key.stop_text_input()
+                        self._hide_mobile_keyboard()
 
         return None
 
@@ -394,5 +453,12 @@ async def run_character_creator(screen):
 
     # Stop text input when exiting
     pygame.key.stop_text_input()
+
+    # Clean up mobile input element
+    if sys.platform == "emscripten" and creator.mobile_input:
+        try:
+            platform.window.document.body.removeChild(creator.mobile_input)
+        except Exception as e:
+            print(f"Failed to remove mobile input element: {e}")
 
     return result if result is not False else None
