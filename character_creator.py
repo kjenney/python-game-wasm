@@ -83,6 +83,17 @@ class CharacterCreator:
         )
         self.back_button_hovered = False
 
+        # Create Character button (larger, more prominent)
+        create_button_width = 180
+        create_button_height = 50
+        self.create_button_rect = pygame.Rect(
+            screen.get_width() // 2 - create_button_width // 2,
+            screen.get_height() - 130,
+            create_button_width,
+            create_button_height
+        )
+        self.create_button_hovered = False
+
     def update_preview(self):
         """Update the preview sprite with current customization."""
         # Create a temporary character to generate sprite
@@ -182,8 +193,9 @@ class CharacterCreator:
         elif event.type == pygame.MOUSEMOTION:
             mouse_pos = event.pos
 
-            # Check if mouse is hovering over back button
+            # Check if mouse is hovering over buttons
             self.back_button_hovered = self.back_button_rect.collidepoint(mouse_pos)
+            self.create_button_hovered = self.create_button_rect.collidepoint(mouse_pos)
 
             # Handle slider dragging
             if self.dragging_slider is not None:
@@ -204,6 +216,10 @@ class CharacterCreator:
                 # Check if back button was clicked
                 if self.back_button_rect.collidepoint(mouse_pos):
                     return False  # Cancel character creation
+
+                # Check if create button was clicked
+                if self.create_button_rect.collidepoint(mouse_pos):
+                    return self.create_character()  # Create and return character
 
                 # Check if any slider was clicked
                 for i, slider_rect in enumerate(self.slider_rects):
@@ -347,10 +363,18 @@ class CharacterCreator:
         eye_name_text = self.small_font.render(current_eye_name, True, (255, 255, 255))
         self.screen.blit(eye_name_text, (slider_x + 50, eye_y + 40))
 
+        # Draw Create Character button (center bottom, above instructions)
+        create_button_color = (100, 200, 100) if self.create_button_hovered else (50, 150, 50)
+        pygame.draw.rect(self.screen, create_button_color, self.create_button_rect, border_radius=8)
+        pygame.draw.rect(self.screen, (150, 255, 150), self.create_button_rect, 3, border_radius=8)
+
+        create_text = self.font.render("Create Character", True, (255, 255, 255))
+        create_text_rect = create_text.get_rect(center=self.create_button_rect.center)
+        self.screen.blit(create_text, create_text_rect)
+
         # Instructions at bottom
         instructions = [
-            "Click/drag sliders or use arrow keys | 1-4: Presets | E: Eye color",
-            "ENTER/SPACE or click: Create character",
+            "Click/drag sliders or arrow keys | 1-4: Presets | E: Eye color",
             "ESC or Back button: Cancel"
         ]
 
