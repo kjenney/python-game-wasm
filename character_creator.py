@@ -292,7 +292,7 @@ class CharacterCreator:
             # Slider fill
             fill_width = int((self.body_color[i] / 255) * 200)
             fill_rect = pygame.Rect(slider_x + 70, s_y + 5, fill_width, 20)
-            slider_color = [(0, 0, 0), (0, 0, 0), (0, 0, 0)]
+            slider_color = [0, 0, 0]
             slider_color[i] = 255
             pygame.draw.rect(self.screen, tuple(slider_color), fill_rect)
 
