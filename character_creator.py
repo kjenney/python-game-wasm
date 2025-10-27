@@ -81,8 +81,7 @@ class CharacterCreator:
         # Mobile keyboard support for WASM
         self.mobile_input = None
         self._setup_mobile_input()
-        # Show keyboard initially since name input is active by default
-        self._show_mobile_keyboard()
+        # Don't show keyboard automatically - wait for user to click text box
 
     def _setup_mobile_input(self):
         """
@@ -92,10 +91,19 @@ class CharacterCreator:
         """
         if sys.platform == "emscripten":
             try:
+                # Remove any existing input element first
+                existing = platform.window.document.getElementById("mobile-keyboard-input")
+                if existing:
+                    platform.window.document.body.removeChild(existing)
+
                 # Create an invisible input element
                 input_elem = platform.window.document.createElement("input")
                 input_elem.type = "text"
                 input_elem.id = "mobile-keyboard-input"
+                input_elem.autocomplete = "off"
+                input_elem.autocorrect = "off"
+                input_elem.autocapitalize = "off"
+                input_elem.spellcheck = False
 
                 # Style it to be invisible but still functional
                 input_elem.style.position = "absolute"
@@ -105,28 +113,45 @@ class CharacterCreator:
                 input_elem.style.height = "1px"
                 input_elem.style.opacity = "0"
                 input_elem.style.pointerEvents = "none"
+                input_elem.style.border = "none"
+                input_elem.style.outline = "none"
 
                 # Add to document
                 platform.window.document.body.appendChild(input_elem)
                 self.mobile_input = input_elem
+                print("Mobile input element created successfully")
             except Exception as e:
                 print(f"Failed to create mobile input element: {e}")
+                import traceback
+                traceback.print_exc()
 
     def _show_mobile_keyboard(self):
         """Focus the hidden input element to trigger mobile keyboard."""
         if sys.platform == "emscripten" and self.mobile_input:
             try:
+                print("Attempting to show mobile keyboard")
                 self.mobile_input.focus()
+                print("Mobile keyboard focus called successfully")
             except Exception as e:
                 print(f"Failed to focus mobile input: {e}")
+                import traceback
+                traceback.print_exc()
 
     def _hide_mobile_keyboard(self):
         """Blur the hidden input element to hide mobile keyboard."""
         if sys.platform == "emscripten" and self.mobile_input:
             try:
+                print("Hiding mobile keyboard")
                 self.mobile_input.blur()
+                # Also restore focus to canvas
+                canvas = platform.window.document.getElementById("canvas")
+                if canvas:
+                    canvas.focus()
+                    print("Canvas focus restored")
             except Exception as e:
                 print(f"Failed to blur mobile input: {e}")
+                import traceback
+                traceback.print_exc()
 
     def update_preview(self):
         """Update the preview sprite with current customization."""
@@ -255,16 +280,23 @@ class CharacterCreator:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left mouse button
                 mouse_pos = event.pos
+                print(f"Mouse click at {mouse_pos}")
                 # Check if click is on name input box
                 if self.name_input_rect and self.name_input_rect.collidepoint(mouse_pos):
+                    print("Click on name input box detected")
                     # Activate name input mode if not already active
                     if not self.name_input_active:
+                        print("Activating name input mode")
                         self.name_input_active = True
                         pygame.key.start_text_input()
                         self._show_mobile_keyboard()
+                    else:
+                        print("Name input already active")
                 else:
+                    print("Click outside name input box")
                     # Clicked outside text box - deactivate name input
                     if self.name_input_active:
+                        print("Deactivating name input mode")
                         self.name_input_active = False
                         pygame.key.stop_text_input()
                         self._hide_mobile_keyboard()
@@ -429,6 +461,7 @@ async def run_character_creator(screen):
     """
     import asyncio
 
+    print("=== Entering character creator ===")
     creator = CharacterCreator(screen)
     clock = pygame.time.Clock()
 
@@ -457,15 +490,24 @@ async def run_character_creator(screen):
     # Clean up mobile input element and restore focus to canvas
     if sys.platform == "emscripten" and creator.mobile_input:
         try:
+            print("Cleaning up mobile input element")
             # Blur the input first to ensure it's not focused
             creator.mobile_input.blur()
+            print("Input element blurred")
             # Remove from DOM
             platform.window.document.body.removeChild(creator.mobile_input)
+            print("Input element removed from DOM")
             # Restore focus to the canvas
             canvas = platform.window.document.getElementById("canvas")
             if canvas:
                 canvas.focus()
+                print("Canvas focus restored after cleanup")
+            else:
+                print("Warning: Canvas element not found!")
         except Exception as e:
             print(f"Failed to cleanup mobile input element: {e}")
+            import traceback
+            traceback.print_exc()
 
+    print(f"Character creator exiting with result: {result}")
     return result if result is not False else None
