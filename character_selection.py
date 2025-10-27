@@ -3,6 +3,7 @@ Character selection screen for the game.
 """
 import pygame
 from characters import CHARACTERS
+from version import __version__
 
 # Special index to indicate custom character creation
 CREATE_CUSTOM_INDEX = -1
@@ -190,3 +191,7 @@ class CharacterSelectionScreen:
             center=(self.screen.get_width() // 2, self.screen.get_height() - 50)
         )
         self.screen.blit(instructions, instr_rect)
+
+        # Draw version number in bottom left corner
+        version_text = self.small_font.render(f"v{__version__}", True, (120, 120, 120))
+        self.screen.blit(version_text, (10, self.screen.get_height() - 30))

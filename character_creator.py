@@ -64,6 +64,7 @@ class CharacterCreator:
         self.name_input_active = True
         self.cursor_visible = True
         self.cursor_timer = 0
+        self.name_input_rect = None  # Store text box rect for click detection
 
         # Preview sprite
         self.preview_sprite = None
@@ -193,6 +194,22 @@ class CharacterCreator:
                     self.eye_color = self.EYE_COLORS[self.selected_eye_color_index][1]
                     self.update_preview()
 
+        # Handle mouse clicks
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left mouse button
+                mouse_pos = event.pos
+                # Check if click is on name input box
+                if self.name_input_rect and self.name_input_rect.collidepoint(mouse_pos):
+                    # Activate name input mode if not already active
+                    if not self.name_input_active:
+                        self.name_input_active = True
+                        pygame.key.start_text_input()
+                else:
+                    # Clicked outside text box - deactivate name input
+                    if self.name_input_active:
+                        self.name_input_active = False
+                        pygame.key.stop_text_input()
+
         return None
 
     def create_character(self):
@@ -234,6 +251,7 @@ class CharacterCreator:
 
         # Name input box
         name_box_rect = pygame.Rect(50, name_y + 30, 300, 40)
+        self.name_input_rect = name_box_rect  # Store for click detection
         box_color = (100, 100, 255) if self.name_input_active else (80, 80, 80)
         pygame.draw.rect(self.screen, box_color, name_box_rect, 2)
 
