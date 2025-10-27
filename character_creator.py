@@ -94,6 +94,8 @@ class CharacterCreator:
             button_height
         )
         self.back_button_hovered = False
+        print(f"Back button rect: {self.back_button_rect}")
+        print(f"Screen size: {screen.get_width()}x{screen.get_height()}")
 
     def _setup_mobile_input(self):
         """
@@ -116,17 +118,19 @@ class CharacterCreator:
                 input_elem.autocorrect = "off"
                 input_elem.autocapitalize = "off"
                 input_elem.spellcheck = False
+                input_elem.tabIndex = -1  # Prevent accidental tab focus
 
-                # Style it to be invisible but still functional
+                # Style it to be invisible and non-interactive
                 input_elem.style.position = "absolute"
                 input_elem.style.left = "-9999px"
                 input_elem.style.top = "-9999px"
                 input_elem.style.width = "1px"
                 input_elem.style.height = "1px"
                 input_elem.style.opacity = "0"
-                input_elem.style.pointerEvents = "none"
+                input_elem.style.pointerEvents = "none"  # CRITICAL: Don't capture clicks
                 input_elem.style.border = "none"
                 input_elem.style.outline = "none"
+                input_elem.style.zIndex = "-1000"  # Ensure it's behind everything
 
                 # Add to document
                 platform.window.document.body.appendChild(input_elem)
@@ -298,10 +302,18 @@ class CharacterCreator:
             if event.button == 1:  # Left mouse button
                 mouse_pos = event.pos
                 print(f"Mouse click at {mouse_pos}")
+                print(f"Back button rect: {self.back_button_rect}")
+                back_button_hit = self.back_button_rect.collidepoint(mouse_pos)
+                print(f"Back button collision: {back_button_hit}")
 
-                # Check if back button was clicked
-                if self.back_button_rect.collidepoint(mouse_pos):
-                    print("Back button clicked")
+                # Check if back button was clicked FIRST (highest priority)
+                if back_button_hit:
+                    print("Back button clicked - cancelling character creation")
+                    # Hide mobile keyboard before exiting
+                    if self.name_input_active:
+                        self.name_input_active = False
+                        pygame.key.stop_text_input()
+                        self._hide_mobile_keyboard()
                     return False  # Cancel character creation
 
                 # Check if click is on name input box
