@@ -23,6 +23,9 @@ class TestCharacterCreator(unittest.TestCase):
             patch('character_creator.pygame.draw.rect'),
             patch('character_creator.pygame.draw.line'),
             patch('character_creator.pygame.Rect'),
+            patch('character_creator.pygame.key.start_text_input'),
+            patch('character_creator.pygame.key.stop_text_input'),
+            patch('character_creator.pygame.key.set_text_input_rect'),
         ]
 
         # Start all patches

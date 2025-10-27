@@ -69,6 +69,9 @@ class CharacterCreator:
         self.preview_sprite = None
         self.update_preview()
 
+        # Start text input to trigger mobile keyboard
+        pygame.key.start_text_input()
+
     def update_preview(self):
         """Update the preview sprite with current customization."""
         # Create a temporary character to generate sprite
@@ -137,6 +140,11 @@ class CharacterCreator:
             # TAB - Switch between name input and slider control
             elif event.key == pygame.K_TAB:
                 self.name_input_active = not self.name_input_active
+                # Toggle text input to show/hide mobile keyboard
+                if self.name_input_active:
+                    pygame.key.start_text_input()
+                else:
+                    pygame.key.stop_text_input()
                 return None
 
             # Handle name input
@@ -228,6 +236,10 @@ class CharacterCreator:
         name_box_rect = pygame.Rect(50, name_y + 30, 300, 40)
         box_color = (100, 100, 255) if self.name_input_active else (80, 80, 80)
         pygame.draw.rect(self.screen, box_color, name_box_rect, 2)
+
+        # Set text input rect for mobile keyboard positioning
+        if self.name_input_active:
+            pygame.key.set_text_input_rect(name_box_rect)
 
         # Draw name text with cursor
         name_text = self.small_font.render(self.name, True, (255, 255, 255))
@@ -361,5 +373,8 @@ async def run_character_creator(screen):
             pygame.display.flip()
             clock.tick(60)
             await asyncio.sleep(0)  # Allow other async tasks to run
+
+    # Stop text input when exiting
+    pygame.key.stop_text_input()
 
     return result if result is not False else None
