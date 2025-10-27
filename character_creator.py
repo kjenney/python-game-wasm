@@ -2,16 +2,12 @@
 Character Creator Module
 
 This module provides a character creator minigame that allows players
-to customize their own character with name, colors, and visual features.
+to customize their own character with colors and visual features.
 """
 
-import sys
 import pygame
+import random
 from characters import Character
-
-# Import platform for WASM/mobile keyboard support
-if sys.platform == "emscripten":
-    import platform
 
 
 class CharacterCreator:
@@ -19,11 +15,11 @@ class CharacterCreator:
     Character creator screen that allows players to customize their character.
 
     Features:
-    - Custom name input
     - Body color customization via RGB sliders
     - Eye color customization
     - Real-time preview of character sprite
     - Template selection (Knight, Mage, Ranger presets)
+    - Auto-generated random name
     """
 
     # Color presets based on existing characters
@@ -44,6 +40,10 @@ class CharacterCreator:
         ("Yellow", (255, 255, 100))
     ]
 
+    # Random name parts for character generation
+    NAME_PREFIXES = ["Shadow", "Thunder", "Storm", "Fire", "Ice", "Wind", "Star", "Moon", "Sun", "Dragon"]
+    NAME_SUFFIXES = ["blade", "walker", "runner", "striker", "dancer", "seeker", "rider", "slayer", "knight", "mage"]
+
     def __init__(self, screen):
         """
         Initialize the character creator.
@@ -56,32 +56,18 @@ class CharacterCreator:
         self.small_font = pygame.font.Font(None, 24)
 
         # Character attributes
-        self.name = ""
+        # Generate a random name
+        self.name = f"{random.choice(self.NAME_PREFIXES)}{random.choice(self.NAME_SUFFIXES)}"
         self.body_color = list(self.PRESETS["Custom"])  # Start with gray
         self.eye_color = self.EYE_COLORS[0][1]  # Start with blue eyes
         self.selected_eye_color_index = 0
 
         # UI state
         self.active_slider = 0  # 0=Red, 1=Green, 2=Blue
-        self.slider_rects = []
-        self.preset_rects = []
-        self.eye_color_rects = []
-        self.name_input_active = True
-        self.cursor_visible = True
-        self.cursor_timer = 0
-        self.name_input_rect = None  # Store text box rect for click detection
 
         # Preview sprite
         self.preview_sprite = None
         self.update_preview()
-
-        # Start text input to trigger mobile keyboard
-        pygame.key.start_text_input()
-
-        # Mobile keyboard support for WASM
-        self.mobile_input = None
-        self._setup_mobile_input()
-        # Don't show keyboard automatically - wait for user to click text box
 
         # Back button
         button_width = 100
@@ -94,80 +80,6 @@ class CharacterCreator:
             button_height
         )
         self.back_button_hovered = False
-        print(f"Back button rect: {self.back_button_rect}")
-        print(f"Screen size: {screen.get_width()}x{screen.get_height()}")
-
-    def _setup_mobile_input(self):
-        """
-        Create a hidden HTML input element for mobile keyboard support.
-        This is needed because pygame.key.start_text_input() doesn't trigger
-        mobile keyboards in WASM/pygbag builds.
-        """
-        if sys.platform == "emscripten":
-            try:
-                # Remove any existing input element first
-                existing = platform.window.document.getElementById("mobile-keyboard-input")
-                if existing:
-                    platform.window.document.body.removeChild(existing)
-
-                # Create an invisible input element
-                input_elem = platform.window.document.createElement("input")
-                input_elem.type = "text"
-                input_elem.id = "mobile-keyboard-input"
-                input_elem.autocomplete = "off"
-                input_elem.autocorrect = "off"
-                input_elem.autocapitalize = "off"
-                input_elem.spellcheck = False
-                input_elem.tabIndex = -1  # Prevent accidental tab focus
-
-                # Style it to be invisible and non-interactive
-                input_elem.style.position = "absolute"
-                input_elem.style.left = "-9999px"
-                input_elem.style.top = "-9999px"
-                input_elem.style.width = "1px"
-                input_elem.style.height = "1px"
-                input_elem.style.opacity = "0"
-                input_elem.style.pointerEvents = "none"  # CRITICAL: Don't capture clicks
-                input_elem.style.border = "none"
-                input_elem.style.outline = "none"
-                input_elem.style.zIndex = "-1000"  # Ensure it's behind everything
-
-                # Add to document
-                platform.window.document.body.appendChild(input_elem)
-                self.mobile_input = input_elem
-                print("Mobile input element created successfully")
-            except Exception as e:
-                print(f"Failed to create mobile input element: {e}")
-                import traceback
-                traceback.print_exc()
-
-    def _show_mobile_keyboard(self):
-        """Focus the hidden input element to trigger mobile keyboard."""
-        if sys.platform == "emscripten" and self.mobile_input:
-            try:
-                print("Attempting to show mobile keyboard")
-                self.mobile_input.focus()
-                print("Mobile keyboard focus called successfully")
-            except Exception as e:
-                print(f"Failed to focus mobile input: {e}")
-                import traceback
-                traceback.print_exc()
-
-    def _hide_mobile_keyboard(self):
-        """Blur the hidden input element to hide mobile keyboard."""
-        if sys.platform == "emscripten" and self.mobile_input:
-            try:
-                print("Hiding mobile keyboard")
-                self.mobile_input.blur()
-                # Also restore focus to canvas
-                canvas = platform.window.document.getElementById("canvas")
-                if canvas:
-                    canvas.focus()
-                    print("Canvas focus restored")
-            except Exception as e:
-                print(f"Failed to blur mobile input: {e}")
-                import traceback
-                traceback.print_exc()
 
     def update_preview(self):
         """Update the preview sprite with current customization."""
@@ -229,68 +141,40 @@ class CharacterCreator:
                 return False
 
             # ENTER - Confirm character creation
-            elif event.key == pygame.K_RETURN:
-                if self.name.strip():  # Only allow if name is not empty
-                    return self.create_character()
-                return None
+            elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                return self.create_character()
 
-            # TAB - Switch between name input and slider control
-            elif event.key == pygame.K_TAB:
-                self.name_input_active = not self.name_input_active
-                # Toggle text input to show/hide mobile keyboard
-                if self.name_input_active:
-                    pygame.key.start_text_input()
-                    self._show_mobile_keyboard()
-                else:
-                    pygame.key.stop_text_input()
-                    self._hide_mobile_keyboard()
-                return None
-
-            # Handle name input
-            if self.name_input_active:
-                if event.key == pygame.K_BACKSPACE:
-                    self.name = self.name[:-1]
-                elif event.key == pygame.K_SPACE:
-                    if len(self.name) < 20:
-                        self.name += " "
-                elif len(self.name) < 20:  # Limit name length
-                    if event.unicode.isprintable():
-                        self.name += event.unicode
+            # Arrow keys for color adjustment
+            elif event.key == pygame.K_UP:
+                self.active_slider = (self.active_slider - 1) % 3
+            elif event.key == pygame.K_DOWN:
+                self.active_slider = (self.active_slider + 1) % 3
+            elif event.key == pygame.K_LEFT:
+                self.body_color[self.active_slider] = max(0, self.body_color[self.active_slider] - 5)
                 self.update_preview()
-                return None
+            elif event.key == pygame.K_RIGHT:
+                self.body_color[self.active_slider] = min(255, self.body_color[self.active_slider] + 5)
+                self.update_preview()
 
-            # Handle slider/color selection when not in name input mode
-            if not self.name_input_active:
-                if event.key == pygame.K_UP:
-                    self.active_slider = (self.active_slider - 1) % 3
-                elif event.key == pygame.K_DOWN:
-                    self.active_slider = (self.active_slider + 1) % 3
-                elif event.key == pygame.K_LEFT:
-                    self.body_color[self.active_slider] = max(0, self.body_color[self.active_slider] - 5)
-                    self.update_preview()
-                elif event.key == pygame.K_RIGHT:
-                    self.body_color[self.active_slider] = min(255, self.body_color[self.active_slider] + 5)
-                    self.update_preview()
+            # Number keys 1-4 for preset selection
+            elif event.key == pygame.K_1:
+                self.body_color = list(self.PRESETS["Knight"])
+                self.update_preview()
+            elif event.key == pygame.K_2:
+                self.body_color = list(self.PRESETS["Mage"])
+                self.update_preview()
+            elif event.key == pygame.K_3:
+                self.body_color = list(self.PRESETS["Ranger"])
+                self.update_preview()
+            elif event.key == pygame.K_4:
+                self.body_color = list(self.PRESETS["Custom"])
+                self.update_preview()
 
-                # Number keys 1-4 for preset selection
-                elif event.key == pygame.K_1:
-                    self.body_color = list(self.PRESETS["Knight"])
-                    self.update_preview()
-                elif event.key == pygame.K_2:
-                    self.body_color = list(self.PRESETS["Mage"])
-                    self.update_preview()
-                elif event.key == pygame.K_3:
-                    self.body_color = list(self.PRESETS["Ranger"])
-                    self.update_preview()
-                elif event.key == pygame.K_4:
-                    self.body_color = list(self.PRESETS["Custom"])
-                    self.update_preview()
-
-                # E key to cycle through eye colors
-                elif event.key == pygame.K_e:
-                    self.selected_eye_color_index = (self.selected_eye_color_index + 1) % len(self.EYE_COLORS)
-                    self.eye_color = self.EYE_COLORS[self.selected_eye_color_index][1]
-                    self.update_preview()
+            # E key to cycle through eye colors
+            elif event.key == pygame.K_e:
+                self.selected_eye_color_index = (self.selected_eye_color_index + 1) % len(self.EYE_COLORS)
+                self.eye_color = self.EYE_COLORS[self.selected_eye_color_index][1]
+                self.update_preview()
 
         # Handle mouse motion for hover detection
         elif event.type == pygame.MOUSEMOTION:
@@ -301,40 +185,9 @@ class CharacterCreator:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left mouse button
                 mouse_pos = event.pos
-                print(f"Mouse click at {mouse_pos}")
-                print(f"Back button rect: {self.back_button_rect}")
-                back_button_hit = self.back_button_rect.collidepoint(mouse_pos)
-                print(f"Back button collision: {back_button_hit}")
-
-                # Check if back button was clicked FIRST (highest priority)
-                if back_button_hit:
-                    print("Back button clicked - cancelling character creation")
-                    # Hide mobile keyboard before exiting
-                    if self.name_input_active:
-                        self.name_input_active = False
-                        pygame.key.stop_text_input()
-                        self._hide_mobile_keyboard()
+                # Check if back button was clicked
+                if self.back_button_rect.collidepoint(mouse_pos):
                     return False  # Cancel character creation
-
-                # Check if click is on name input box
-                elif self.name_input_rect and self.name_input_rect.collidepoint(mouse_pos):
-                    print("Click on name input box detected")
-                    # Activate name input mode if not already active
-                    if not self.name_input_active:
-                        print("Activating name input mode")
-                        self.name_input_active = True
-                        pygame.key.start_text_input()
-                        self._show_mobile_keyboard()
-                    else:
-                        print("Name input already active")
-                else:
-                    print("Click outside name input box")
-                    # Clicked outside text box - deactivate name input
-                    if self.name_input_active:
-                        print("Deactivating name input mode")
-                        self.name_input_active = False
-                        pygame.key.stop_text_input()
-                        self._hide_mobile_keyboard()
 
         return None
 
@@ -379,33 +232,10 @@ class CharacterCreator:
             pygame.draw.rect(self.screen, (255, 255, 255),
                            (preview_x - 2, preview_y - 2, 132, 132), 2)
 
-        # Name input section
-        name_y = 230
-        name_label = self.small_font.render("Name:", True, (255, 255, 255))
+        # Display character name below preview
+        name_y = 220
+        name_label = self.small_font.render(f"Name: {self.name}", True, (255, 255, 255))
         self.screen.blit(name_label, (50, name_y))
-
-        # Name input box
-        name_box_rect = pygame.Rect(50, name_y + 30, 300, 40)
-        self.name_input_rect = name_box_rect  # Store for click detection
-        box_color = (100, 100, 255) if self.name_input_active else (80, 80, 80)
-        pygame.draw.rect(self.screen, box_color, name_box_rect, 2)
-
-        # Set text input rect for mobile keyboard positioning
-        if self.name_input_active:
-            pygame.key.set_text_input_rect(name_box_rect)
-
-        # Draw name text with cursor
-        name_text = self.small_font.render(self.name, True, (255, 255, 255))
-        self.screen.blit(name_text, (55, name_y + 38))
-
-        # Blinking cursor
-        if self.name_input_active:
-            self.cursor_timer += 1
-            if self.cursor_timer % 60 < 30:  # Blink every 30 frames
-                cursor_x = 55 + name_text.get_width() + 2
-                pygame.draw.line(self.screen, (255, 255, 255),
-                               (cursor_x, name_y + 35),
-                               (cursor_x, name_y + 60), 2)
 
         # Color sliders section
         slider_x = 400
@@ -444,7 +274,7 @@ class CharacterCreator:
             s_y = rgb_slider_y + 30 + i * 40
 
             # Label
-            is_active_slider = (i == self.active_slider and not self.name_input_active)
+            is_active_slider = (i == self.active_slider)
             label_color = (255, 255, 100) if is_active_slider else (200, 200, 200)
             label = self.small_font.render(f"{slider_name}:", True, label_color)
             self.screen.blit(label, (slider_x, s_y))
@@ -481,9 +311,9 @@ class CharacterCreator:
 
         # Instructions at bottom
         instructions = [
-            "TAB: Switch between name/color editing",
-            "ENTER: Create character (name required)",
-            "ESC or Back button: Cancel and go back"
+            "Arrow keys: Adjust colors | 1-4: Presets | E: Eye color",
+            "ENTER/SPACE: Create character",
+            "ESC or Back button: Cancel"
         ]
 
         inst_y = self.screen.get_height() - 80
@@ -528,30 +358,4 @@ async def run_character_creator(screen):
             clock.tick(60)
             await asyncio.sleep(0)  # Allow other async tasks to run
 
-    # Stop text input when exiting
-    pygame.key.stop_text_input()
-
-    # Clean up mobile input element and restore focus to canvas
-    if sys.platform == "emscripten" and creator.mobile_input:
-        try:
-            print("Cleaning up mobile input element")
-            # Blur the input first to ensure it's not focused
-            creator.mobile_input.blur()
-            print("Input element blurred")
-            # Remove from DOM
-            platform.window.document.body.removeChild(creator.mobile_input)
-            print("Input element removed from DOM")
-            # Restore focus to the canvas
-            canvas = platform.window.document.getElementById("canvas")
-            if canvas:
-                canvas.focus()
-                print("Canvas focus restored after cleanup")
-            else:
-                print("Warning: Canvas element not found!")
-        except Exception as e:
-            print(f"Failed to cleanup mobile input element: {e}")
-            import traceback
-            traceback.print_exc()
-
-    print(f"Character creator exiting with result: {result}")
     return result if result is not False else None

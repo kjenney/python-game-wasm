@@ -4,6 +4,7 @@ Tests for the character creator module.
 import unittest
 from unittest.mock import Mock, patch
 import pygame
+from characters import Character
 
 
 class TestCharacterCreator(unittest.TestCase):
@@ -57,63 +58,55 @@ class TestCharacterCreator(unittest.TestCase):
         creator = CharacterCreator(self.screen_mock)
 
         # Check initial state
-        self.assertEqual(creator.name, "")
+        self.assertIsInstance(creator.name, str)  # Name is auto-generated
+        self.assertGreater(len(creator.name), 0)  # Name is not empty
         self.assertEqual(creator.body_color, [128, 128, 128])  # Default gray
         self.assertEqual(creator.selected_eye_color_index, 0)
-        self.assertTrue(creator.name_input_active)
         self.assertEqual(creator.active_slider, 0)
 
     def test_name_input_handling(self):
-        """Test name input functionality."""
+        """Test that name is auto-generated and can be manually set."""
         from character_creator import CharacterCreator
 
         creator = CharacterCreator(self.screen_mock)
 
-        # Test adding characters to name
-        event = Mock()
-        event.type = pygame.KEYDOWN
-        event.key = pygame.K_a
-        event.unicode = 'a'
+        # Test that name is auto-generated
+        self.assertIsInstance(creator.name, str)
+        self.assertGreater(len(creator.name), 0)
 
-        result = creator.handle_event(event)
-        self.assertEqual(creator.name, "a")
-        self.assertIsNone(result)
-
-        # Test adding more characters
-        event.unicode = 'b'
-        creator.handle_event(event)
-        self.assertEqual(creator.name, "ab")
+        # Test that name can be manually changed
+        creator.name = "CustomName"
+        self.assertEqual(creator.name, "CustomName")
 
     def test_backspace_handling(self):
-        """Test backspace removes characters from name."""
+        """Test that backspace key doesn't affect auto-generated name."""
         from character_creator import CharacterCreator
 
         creator = CharacterCreator(self.screen_mock)
-        creator.name = "Test"
+        original_name = creator.name
 
         event = Mock()
         event.type = pygame.KEYDOWN
         event.key = pygame.K_BACKSPACE
 
         creator.handle_event(event)
-        self.assertEqual(creator.name, "Tes")
-
-        creator.handle_event(event)
-        self.assertEqual(creator.name, "Te")
+        # Name should remain unchanged
+        self.assertEqual(creator.name, original_name)
 
     def test_space_handling(self):
-        """Test space adds space to name."""
+        """Test SPACE key creates character."""
         from character_creator import CharacterCreator
 
         creator = CharacterCreator(self.screen_mock)
-        creator.name = "Test"
 
         event = Mock()
         event.type = pygame.KEYDOWN
         event.key = pygame.K_SPACE
 
-        creator.handle_event(event)
-        self.assertEqual(creator.name, "Test ")
+        result = creator.handle_event(event)
+        # SPACE should now create the character
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, Character)
 
     def test_name_length_limit(self):
         """Test name is limited to 20 characters."""
@@ -131,28 +124,26 @@ class TestCharacterCreator(unittest.TestCase):
         self.assertEqual(len(creator.name), 20)  # Should not exceed 20
 
     def test_tab_switches_modes(self):
-        """Test TAB switches between name input and color editing."""
+        """Test TAB key no longer has special handling (removed name input mode)."""
         from character_creator import CharacterCreator
 
         creator = CharacterCreator(self.screen_mock)
-        self.assertTrue(creator.name_input_active)
+        original_slider = creator.active_slider
 
         event = Mock()
         event.type = pygame.KEYDOWN
         event.key = pygame.K_TAB
 
-        creator.handle_event(event)
-        self.assertFalse(creator.name_input_active)
-
-        creator.handle_event(event)
-        self.assertTrue(creator.name_input_active)
+        result = creator.handle_event(event)
+        # TAB should not do anything now
+        self.assertIsNone(result)
+        self.assertEqual(creator.active_slider, original_slider)
 
     def test_color_slider_navigation(self):
         """Test arrow keys navigate color sliders."""
         from character_creator import CharacterCreator
 
         creator = CharacterCreator(self.screen_mock)
-        creator.name_input_active = False  # Switch to slider mode
         creator.active_slider = 0
 
         event = Mock()
@@ -284,10 +275,11 @@ class TestCharacterCreator(unittest.TestCase):
         self.assertFalse(result)
 
     def test_enter_without_name_returns_none(self):
-        """Test ENTER without name does not create character."""
+        """Test ENTER always creates character (even with empty name override)."""
         from character_creator import CharacterCreator
 
         creator = CharacterCreator(self.screen_mock)
+        # Even if we manually set name to empty, auto-gen name is used in create_character
         creator.name = ""
 
         event = Mock()
@@ -295,7 +287,9 @@ class TestCharacterCreator(unittest.TestCase):
         event.key = pygame.K_RETURN
 
         result = creator.handle_event(event)
-        self.assertIsNone(result)
+        # Should now create character with default name "Custom Hero"
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, Character)
 
     def test_enter_with_name_creates_character(self):
         """Test ENTER with name creates character."""
