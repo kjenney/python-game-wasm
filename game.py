@@ -33,6 +33,18 @@ class Game:
         self.target_pos = None  # Target position for click-to-move
         self.target_marker_timer = 0  # Timer for target marker animation
 
+        # Back button
+        button_width = 100
+        button_height = 40
+        padding = 10
+        self.back_button_rect = pygame.Rect(
+            screen.get_width() - button_width - padding,
+            padding,
+            button_width,
+            button_height
+        )
+        self.back_button_hovered = False
+
     def handle_event(self, event):
         """
         Handle game events.
@@ -48,11 +60,20 @@ class Game:
                 self.return_to_selection = True
                 self.running = False
 
+        elif event.type == pygame.MOUSEMOTION:
+            # Check if mouse is hovering over back button
+            self.back_button_hovered = self.back_button_rect.collidepoint(event.pos)
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left mouse button
-                # Set target position for click-to-move
-                self.target_pos = event.pos
-                self.target_marker_timer = 60  # Show marker for 60 frames (1 second at 60 FPS)
+                # Check if back button was clicked
+                if self.back_button_rect.collidepoint(event.pos):
+                    self.return_to_selection = True
+                    self.running = False
+                else:
+                    # Set target position for click-to-move
+                    self.target_pos = event.pos
+                    self.target_marker_timer = 60  # Show marker for 60 frames (1 second at 60 FPS)
 
     def update(self, keys):
         """
@@ -141,6 +162,15 @@ class Game:
 
         # Draw character
         self.screen.blit(self.sprite, (self.character.x, self.character.y))
+
+        # Draw back button
+        button_color = (100, 100, 200) if self.back_button_hovered else (70, 70, 150)
+        pygame.draw.rect(self.screen, button_color, self.back_button_rect, border_radius=5)
+        pygame.draw.rect(self.screen, (200, 200, 255), self.back_button_rect, 2, border_radius=5)
+
+        back_text = self.font.render("Back", True, (255, 255, 255))
+        back_text_rect = back_text.get_rect(center=self.back_button_rect.center)
+        self.screen.blit(back_text, back_text_rect)
 
         # Draw HUD
         char_info = self.font.render(

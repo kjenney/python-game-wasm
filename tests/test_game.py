@@ -59,6 +59,8 @@ class TestGame:
     def test_handle_event_escape(self):
         """Test that ESC key stops the game."""
         screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
         with patch('game.pygame.font.Font'):
             game = Game(screen, 0)
             assert game.running is True
@@ -72,6 +74,8 @@ class TestGame:
     def test_is_running(self):
         """Test the is_running method."""
         screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
         with patch('game.pygame.font.Font'):
             game = Game(screen, 0)
             assert game.is_running() is True
@@ -337,3 +341,87 @@ class TestGame:
 
             assert game.return_to_selection is False
             assert game.running is False
+
+    def test_back_button_hover(self):
+        """Test that hovering over back button sets hover state."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            # Initially not hovered
+            assert game.back_button_hovered is False
+
+            # Simulate mouse motion over the button
+            event = Mock()
+            event.type = pygame.MOUSEMOTION
+            event.pos = (game.back_button_rect.centerx, game.back_button_rect.centery)
+
+            game.handle_event(event)
+
+            assert game.back_button_hovered is True
+
+    def test_back_button_not_hovered(self):
+        """Test that moving mouse away from back button clears hover state."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            # Set hover state to True first
+            game.back_button_hovered = True
+
+            # Simulate mouse motion away from the button
+            event = Mock()
+            event.type = pygame.MOUSEMOTION
+            event.pos = (10, 10)  # Far from button in top-right
+
+            game.handle_event(event)
+
+            assert game.back_button_hovered is False
+
+    def test_back_button_click(self):
+        """Test that clicking the back button returns to selection."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            # Click the back button
+            event = Mock()
+            event.type = pygame.MOUSEBUTTONDOWN
+            event.button = 1  # Left click
+            event.pos = (game.back_button_rect.centerx, game.back_button_rect.centery)
+
+            game.handle_event(event)
+
+            assert game.return_to_selection is True
+            assert game.running is False
+
+    def test_back_button_click_outside_does_not_return(self):
+        """Test that clicking outside the back button doesn't return to selection."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            # Click somewhere else (not the back button)
+            event = Mock()
+            event.type = pygame.MOUSEBUTTONDOWN
+            event.button = 1  # Left click
+            event.pos = (400, 300)  # Center of screen, away from button
+
+            game.handle_event(event)
+
+            # Should not return to selection, just set target position
+            assert game.return_to_selection is False
+            assert game.running is True
+            assert game.target_pos == (400, 300)
