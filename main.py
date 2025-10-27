@@ -14,6 +14,28 @@ from character_selection import CharacterSelectionScreen, CREATE_CUSTOM_INDEX
 from character_creator import run_character_creator
 from game import Game
 
+# Import platform for WASM-specific functionality
+if sys.platform == "emscripten":
+    import platform
+
+
+def restore_canvas_focus():
+    """
+    Restore focus to the pygame canvas.
+    This is needed on WASM/mobile to ensure mouse/touch events are captured
+    after focus has been lost (e.g., after using HTML input elements).
+    """
+    if sys.platform == "emscripten":
+        try:
+            # Try to focus the canvas element
+            canvas = platform.window.document.getElementById("canvas")
+            if canvas:
+                canvas.focus()
+            # Also focus the window for good measure
+            platform.window.focus()
+        except Exception as e:
+            print(f"Failed to restore canvas focus: {e}")
+
 
 async def main():
     """Main game loop - async for WASM compatibility."""
@@ -33,6 +55,9 @@ async def main():
     keep_playing = True
     while keep_playing:
         # Character selection phase
+        # Ensure canvas has focus for mouse/touch events
+        restore_canvas_focus()
+
         selection_screen = CharacterSelectionScreen(screen)
         selected_character_index = None
         custom_character = None
@@ -55,6 +80,9 @@ async def main():
         # Handle custom character creation if selected
         if selected_character_index == CREATE_CUSTOM_INDEX:
             custom_character = await run_character_creator(screen)
+            # Restore canvas focus after character creator
+            restore_canvas_focus()
+
             if custom_character is None:
                 # User cancelled, go back to selection
                 selected_character_index = None

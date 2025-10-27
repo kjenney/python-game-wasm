@@ -454,11 +454,18 @@ async def run_character_creator(screen):
     # Stop text input when exiting
     pygame.key.stop_text_input()
 
-    # Clean up mobile input element
+    # Clean up mobile input element and restore focus to canvas
     if sys.platform == "emscripten" and creator.mobile_input:
         try:
+            # Blur the input first to ensure it's not focused
+            creator.mobile_input.blur()
+            # Remove from DOM
             platform.window.document.body.removeChild(creator.mobile_input)
+            # Restore focus to the canvas
+            canvas = platform.window.document.getElementById("canvas")
+            if canvas:
+                canvas.focus()
         except Exception as e:
-            print(f"Failed to remove mobile input element: {e}")
+            print(f"Failed to cleanup mobile input element: {e}")
 
     return result if result is not False else None
