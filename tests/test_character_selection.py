@@ -118,3 +118,121 @@ class TestCharacterSelectionScreen:
             result = selection.handle_event(event)
             assert result is None
             assert selection.selected_index == initial_index
+
+    def test_mouse_hover_changes_selection(self):
+        """Test that hovering over a character changes selection."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('character_selection.pygame.font.Font'):
+            with patch('character_selection.pygame.Surface'):
+                with patch('character_selection.pygame.draw.rect'):
+                    selection = CharacterSelectionScreen(screen)
+                    # Draw to populate character_rects
+                    selection.draw()
+
+                    # Manually create proper rects for testing
+                    selection.character_rects = [
+                        pygame.Rect(0, 200, 200, 224),    # Character 0
+                        pygame.Rect(200, 200, 200, 224),  # Character 1
+                        pygame.Rect(400, 200, 200, 224),  # Character 2
+                        pygame.Rect(600, 200, 200, 224),  # Character 3 (custom)
+                    ]
+
+                    # Simulate hover over second character
+                    event = Mock()
+                    event.type = pygame.MOUSEMOTION
+                    event.pos = (300, 300)  # Inside second character rect
+
+                    selection.handle_event(event)
+                    assert selection.selected_index == 1
+
+    def test_mouse_click_confirms_selection(self):
+        """Test that clicking on an already selected character confirms it."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('character_selection.pygame.font.Font'):
+            with patch('character_selection.pygame.Surface'):
+                with patch('character_selection.pygame.draw.rect'):
+                    selection = CharacterSelectionScreen(screen)
+                    selection.selected_index = 0
+
+                    # Manually create proper rects for testing
+                    selection.character_rects = [
+                        pygame.Rect(0, 200, 200, 224),
+                        pygame.Rect(200, 200, 200, 224),
+                        pygame.Rect(400, 200, 200, 224),
+                        pygame.Rect(600, 200, 200, 224),
+                    ]
+
+                    # Simulate click on first character (already selected)
+                    event = Mock()
+                    event.type = pygame.MOUSEBUTTONDOWN
+                    event.button = 1
+                    event.pos = (100, 300)  # Inside first character rect
+
+                    result = selection.handle_event(event)
+                    assert result == 0
+
+    def test_mouse_click_selects_different_character(self):
+        """Test that clicking on a different character selects it."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('character_selection.pygame.font.Font'):
+            with patch('character_selection.pygame.Surface'):
+                with patch('character_selection.pygame.draw.rect'):
+                    selection = CharacterSelectionScreen(screen)
+                    selection.selected_index = 0
+
+                    # Manually create proper rects for testing
+                    selection.character_rects = [
+                        pygame.Rect(0, 200, 200, 224),
+                        pygame.Rect(200, 200, 200, 224),
+                        pygame.Rect(400, 200, 200, 224),
+                        pygame.Rect(600, 200, 200, 224),
+                    ]
+
+                    # Simulate click on second character
+                    event = Mock()
+                    event.type = pygame.MOUSEBUTTONDOWN
+                    event.button = 1
+                    event.pos = (300, 300)  # Inside second character rect
+
+                    result = selection.handle_event(event)
+                    # First click selects, doesn't confirm
+                    assert result is None
+                    assert selection.selected_index == 1
+
+    def test_mouse_click_outside_does_nothing(self):
+        """Test that clicking outside character areas does nothing."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('character_selection.pygame.font.Font'):
+            with patch('character_selection.pygame.Surface'):
+                with patch('character_selection.pygame.draw.rect'):
+                    selection = CharacterSelectionScreen(screen)
+                    selection.selected_index = 0
+
+                    # Manually create proper rects for testing
+                    selection.character_rects = [
+                        pygame.Rect(0, 200, 200, 224),
+                        pygame.Rect(200, 200, 200, 224),
+                        pygame.Rect(400, 200, 200, 224),
+                        pygame.Rect(600, 200, 200, 224),
+                    ]
+
+                    event = Mock()
+                    event.type = pygame.MOUSEBUTTONDOWN
+                    event.button = 1
+                    event.pos = (50, 50)  # Top area, outside all character rects
+
+                    result = selection.handle_event(event)
+                    assert result is None
+                    assert selection.selected_index == 0  # Should remain unchanged

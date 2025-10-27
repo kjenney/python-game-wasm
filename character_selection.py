@@ -23,6 +23,7 @@ class CharacterSelectionScreen:
         self.total_options = len(CHARACTERS) + 1  # +1 for custom character option
         self.font = pygame.font.Font(None, 36)
         self.small_font = pygame.font.Font(None, 24)
+        self.character_rects = []  # Store clickable areas for mouse support
 
     def handle_event(self, event):
         """
@@ -45,11 +46,41 @@ class CharacterSelectionScreen:
                 if self.selected_index == len(CHARACTERS):
                     return CREATE_CUSTOM_INDEX
                 return self.selected_index
+
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left mouse button
+                mouse_pos = event.pos
+
+                # Check if click is on any character
+                for i, rect in enumerate(self.character_rects):
+                    if rect.collidepoint(mouse_pos):
+                        # Single click selects, double click (or same click) confirms
+                        if self.selected_index == i:
+                            # Already selected, confirm selection
+                            if i == len(CHARACTERS):
+                                return CREATE_CUSTOM_INDEX
+                            return i
+                        else:
+                            # Select this character
+                            self.selected_index = i
+                        break
+
+        elif event.type == pygame.MOUSEMOTION:
+            # Highlight character on hover
+            mouse_pos = event.pos
+            for i, rect in enumerate(self.character_rects):
+                if rect.collidepoint(mouse_pos):
+                    self.selected_index = i
+                    break
+
         return None
 
     def draw(self):
         """Draw the character selection screen."""
         self.screen.fill((20, 20, 40))  # Dark blue background
+
+        # Clear clickable areas
+        self.character_rects = []
 
         # Draw title
         title = self.font.render("Select Your Character", True, (255, 255, 255))
@@ -76,6 +107,10 @@ class CharacterSelectionScreen:
             pygame.draw.rect(sprite, character.eye_color, (40, 24, 4, 4))  # Right pupil
 
             sprite_rect = sprite.get_rect(center=(x_pos, y_pos))
+
+            # Store clickable area (expanded for easier clicking)
+            clickable_rect = sprite_rect.inflate(40, 160)  # Expand to include name/desc
+            self.character_rects.append(clickable_rect)
 
             # Highlight selected character
             if i == self.selected_index:
@@ -122,6 +157,10 @@ class CharacterSelectionScreen:
 
         sprite_rect = custom_sprite.get_rect(center=(x_pos, y_pos))
 
+        # Store clickable area for custom character option
+        clickable_rect = sprite_rect.inflate(40, 160)
+        self.character_rects.append(clickable_rect)
+
         # Highlight if selected
         if self.selected_index == custom_index:
             pygame.draw.rect(self.screen, (255, 255, 0),
@@ -144,7 +183,7 @@ class CharacterSelectionScreen:
 
         # Draw instructions
         instructions = self.small_font.render(
-            "Use LEFT/RIGHT arrows to select, ENTER/SPACE to confirm",
+            "LEFT/RIGHT arrows or HOVER to select | ENTER/SPACE or CLICK to confirm",
             True, (180, 180, 180)
         )
         instr_rect = instructions.get_rect(

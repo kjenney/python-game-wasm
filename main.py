@@ -29,65 +29,74 @@ async def main():
     clock = pygame.time.Clock()
     FPS = 60
 
-    # Character selection phase
-    selection_screen = CharacterSelectionScreen(screen)
-    selected_character_index = None
-    custom_character = None
+    # Main game loop - allows returning to character selection
+    keep_playing = True
+    while keep_playing:
+        # Character selection phase
+        selection_screen = CharacterSelectionScreen(screen)
+        selected_character_index = None
+        custom_character = None
 
-    while selected_character_index is None:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                return
+        while selected_character_index is None:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
 
-            result = selection_screen.handle_event(event)
-            if result is not None:
-                selected_character_index = result
+                result = selection_screen.handle_event(event)
+                if result is not None:
+                    selected_character_index = result
 
-        selection_screen.draw()
-        pygame.display.flip()
-        clock.tick(FPS)
-        await asyncio.sleep(0)  # Required for WASM compatibility
+            selection_screen.draw()
+            pygame.display.flip()
+            clock.tick(FPS)
+            await asyncio.sleep(0)  # Required for WASM compatibility
 
-    # Handle custom character creation if selected
-    if selected_character_index == CREATE_CUSTOM_INDEX:
-        custom_character = await run_character_creator(screen)
-        if custom_character is None:
-            # User cancelled, go back to selection
-            selected_character_index = None
-            while selected_character_index is None:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        return
+        # Handle custom character creation if selected
+        if selected_character_index == CREATE_CUSTOM_INDEX:
+            custom_character = await run_character_creator(screen)
+            if custom_character is None:
+                # User cancelled, go back to selection
+                selected_character_index = None
+                while selected_character_index is None:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            return
 
-                    result = selection_screen.handle_event(event)
-                    if result is not None:
-                        selected_character_index = result
+                        result = selection_screen.handle_event(event)
+                        if result is not None:
+                            selected_character_index = result
 
-                selection_screen.draw()
-                pygame.display.flip()
-                clock.tick(FPS)
-                await asyncio.sleep(0)
+                    selection_screen.draw()
+                    pygame.display.flip()
+                    clock.tick(FPS)
+                    await asyncio.sleep(0)
 
-    # Game phase - pass character index or custom character
-    game = Game(screen, selected_character_index, custom_character=custom_character)
+        # Game phase - pass character index or custom character
+        game = Game(screen, selected_character_index, custom_character=custom_character)
 
-    while game.is_running():
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                return
+        while game.is_running():
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
 
-            game.handle_event(event)
+                game.handle_event(event)
 
-        keys = pygame.key.get_pressed()
-        game.update(keys)
-        game.draw()
+            keys = pygame.key.get_pressed()
+            game.update(keys)
+            game.draw()
 
-        pygame.display.flip()
-        clock.tick(FPS)
-        await asyncio.sleep(0)  # Required for WASM compatibility
+            pygame.display.flip()
+            clock.tick(FPS)
+            await asyncio.sleep(0)  # Required for WASM compatibility
+
+        # Check if player wants to return to character selection
+        if game.return_to_selection:
+            continue  # Loop back to character selection
+        else:
+            keep_playing = False  # Exit and quit game
 
     pygame.quit()
 

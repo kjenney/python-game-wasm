@@ -189,3 +189,151 @@ class TestGame:
 
             assert game.character.x == initial_x
             assert game.character.y == initial_y
+
+    def test_mouse_click_sets_target(self):
+        """Test that mouse click sets target position."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            # Simulate mouse click
+            event = Mock()
+            event.type = pygame.MOUSEBUTTONDOWN
+            event.button = 1
+            event.pos = (500, 300)
+
+            game.handle_event(event)
+
+            assert game.target_pos == (500, 300)
+            assert game.target_marker_timer == 60
+
+    def test_click_to_move_moves_character(self):
+        """Test that character moves toward clicked position."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+            game.character.x = 100
+            game.character.y = 100
+
+            # Set target to the right
+            game.target_pos = (200, 100)
+
+            keys = KeySequence()
+            game.update(keys)
+
+            # Character should have moved toward target
+            assert game.character.x > 100
+
+    def test_keyboard_cancels_click_to_move(self):
+        """Test that keyboard input cancels click-to-move."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            # Set a target
+            game.target_pos = (500, 300)
+
+            # Press a key
+            keys = KeySequence()
+            keys[pygame.K_UP] = True
+            game.update(keys)
+
+            # Target should be cancelled
+            assert game.target_pos is None
+
+    def test_character_stops_at_target(self):
+        """Test that character stops when reaching target."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+            game.character.x = 100
+            game.character.y = 100
+            game.character.speed = 5
+
+            # Set target to character's center (character center is at x + size/2, y + size/2)
+            char_center_x = game.character.x + game.character.size // 2
+            char_center_y = game.character.y + game.character.size // 2
+            game.target_pos = (char_center_x + 2, char_center_y + 2)
+
+            keys = KeySequence()
+            game.update(keys)
+
+            # Character should have reached target and stopped (distance < speed)
+            assert game.target_pos is None
+
+    def test_target_marker_timer_decrements(self):
+        """Test that target marker timer decrements each update."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            game.target_marker_timer = 60
+
+            keys = KeySequence()
+            game.update(keys)
+
+            assert game.target_marker_timer == 59
+
+    def test_return_to_selection_flag_defaults_false(self):
+        """Test that return_to_selection flag is False by default."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            assert game.return_to_selection is False
+
+    def test_b_key_sets_return_to_selection(self):
+        """Test that pressing B sets return_to_selection and stops game."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            # Simulate pressing B key
+            event = Mock()
+            event.type = pygame.KEYDOWN
+            event.key = pygame.K_b
+
+            game.handle_event(event)
+
+            assert game.return_to_selection is True
+            assert game.running is False
+
+    def test_escape_does_not_set_return_to_selection(self):
+        """Test that ESC stops game but doesn't set return_to_selection."""
+        screen = Mock()
+        screen.get_width = Mock(return_value=800)
+        screen.get_height = Mock(return_value=600)
+
+        with patch('game.pygame.font.Font'):
+            game = Game(screen, 0)
+
+            # Simulate pressing ESC key
+            event = Mock()
+            event.type = pygame.KEYDOWN
+            event.key = pygame.K_ESCAPE
+
+            game.handle_event(event)
+
+            assert game.return_to_selection is False
+            assert game.running is False
