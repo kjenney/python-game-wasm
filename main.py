@@ -78,7 +78,8 @@ async def main():
             await asyncio.sleep(0)  # Required for WASM compatibility
 
         # Handle custom character creation if selected
-        if selected_character_index == CREATE_CUSTOM_INDEX:
+        # Loop until we have a valid character (either custom or preset)
+        while selected_character_index == CREATE_CUSTOM_INDEX and custom_character is None:
             custom_character = await run_character_creator(screen)
             # Restore canvas focus after character creator
             restore_canvas_focus()
@@ -100,6 +101,7 @@ async def main():
                     pygame.display.flip()
                     clock.tick(FPS)
                     await asyncio.sleep(0)
+                # Loop will check if selected_character_index is CREATE_CUSTOM_INDEX again
 
         # Game phase - pass character index or custom character
         game = Game(screen, selected_character_index, custom_character=custom_character)
