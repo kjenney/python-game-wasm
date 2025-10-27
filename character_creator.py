@@ -83,12 +83,13 @@ class CharacterCreator:
         )
         self.back_button_hovered = False
 
-        # Create Character button (larger, more prominent)
+        # Create Character button (larger, more prominent, bottom right)
         create_button_width = 180
         create_button_height = 50
+        padding = 10
         self.create_button_rect = pygame.Rect(
-            screen.get_width() // 2 - create_button_width // 2,
-            screen.get_height() - 130,
+            screen.get_width() - create_button_width - padding,
+            screen.get_height() - create_button_height - padding,
             create_button_width,
             create_button_height
         )
