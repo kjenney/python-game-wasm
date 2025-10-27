@@ -83,6 +83,18 @@ class CharacterCreator:
         self._setup_mobile_input()
         # Don't show keyboard automatically - wait for user to click text box
 
+        # Back button
+        button_width = 100
+        button_height = 40
+        padding = 10
+        self.back_button_rect = pygame.Rect(
+            screen.get_width() - button_width - padding,
+            padding,
+            button_width,
+            button_height
+        )
+        self.back_button_hovered = False
+
     def _setup_mobile_input(self):
         """
         Create a hidden HTML input element for mobile keyboard support.
@@ -276,13 +288,24 @@ class CharacterCreator:
                     self.eye_color = self.EYE_COLORS[self.selected_eye_color_index][1]
                     self.update_preview()
 
+        # Handle mouse motion for hover detection
+        elif event.type == pygame.MOUSEMOTION:
+            # Check if mouse is hovering over back button
+            self.back_button_hovered = self.back_button_rect.collidepoint(event.pos)
+
         # Handle mouse clicks
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left mouse button
                 mouse_pos = event.pos
                 print(f"Mouse click at {mouse_pos}")
+
+                # Check if back button was clicked
+                if self.back_button_rect.collidepoint(mouse_pos):
+                    print("Back button clicked")
+                    return False  # Cancel character creation
+
                 # Check if click is on name input box
-                if self.name_input_rect and self.name_input_rect.collidepoint(mouse_pos):
+                elif self.name_input_rect and self.name_input_rect.collidepoint(mouse_pos):
                     print("Click on name input box detected")
                     # Activate name input mode if not already active
                     if not self.name_input_active:
@@ -321,6 +344,15 @@ class CharacterCreator:
         """Draw the character creator interface."""
         # Clear screen with dark background
         self.screen.fill((20, 20, 40))
+
+        # Draw back button (top right)
+        button_color = (100, 100, 200) if self.back_button_hovered else (70, 70, 150)
+        pygame.draw.rect(self.screen, button_color, self.back_button_rect, border_radius=5)
+        pygame.draw.rect(self.screen, (200, 200, 255), self.back_button_rect, 2, border_radius=5)
+
+        back_text = self.small_font.render("Back", True, (255, 255, 255))
+        back_text_rect = back_text.get_rect(center=self.back_button_rect.center)
+        self.screen.blit(back_text, back_text_rect)
 
         # Title
         title = self.font.render("Character Creator", True, (255, 255, 255))
@@ -439,7 +471,7 @@ class CharacterCreator:
         instructions = [
             "TAB: Switch between name/color editing",
             "ENTER: Create character (name required)",
-            "ESC: Cancel and go back"
+            "ESC or Back button: Cancel and go back"
         ]
 
         inst_y = self.screen.get_height() - 80
